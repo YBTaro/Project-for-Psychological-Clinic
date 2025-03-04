@@ -3,6 +3,11 @@ from tkinter import filedialog, messagebox
 import pandas as pd
 from openpyxl import Workbook
 import os
+import matplotlib.pyplot as plt
+from openpyxl.drawing.image import Image
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
+plt.rcParams["font.family"] = "Microsoft JhengHei"
 
 # 建立主視窗
 root = tk.Tk()
@@ -82,10 +87,34 @@ def process_file():
         ws[dic_col[len(doctor_list)+1]+str(4+4*index_newFile)] = df["計算後的當天人數"].sum()
         ws[dic_col[len(doctor_list)+1]+str(5+4*index_newFile)] = df["計算後的當天人數"].mean()
 
+        # 產生圖表
+        plt.figure(figsize=(10, 6))
+
+        for doctor in doctor_list:
+            doctor_df = df[df["醫師"] == doctor].groupby("第幾周")["計算後的當天人數"].mean()
+            plt.plot(doctor_df.index, doctor_df.values, marker="o", label=doctor)
+
+        plt.xlabel("第幾周")
+        plt.ylabel("每診平均人數")
+        plt.title("每位醫師每診平均人數變化")
+        plt.legend()
+        plt.grid(True)
+
+        dir_path = os.path.dirname(file_path)
+
+        # 存圖
+        chart_path = dir_path + "/doctor_chart.png"
+        plt.savefig(chart_path)
+        plt.close()
+
+        # 插入圖片到 Excel
+        img = Image(chart_path)
+        ws.add_image(img, "J2")
+
 
         wb_name = os.path.basename(file_path)
         wb_name = os.path.splitext(wb_name)[0]
-        wb_name = wb_name + "-報告.xlsx"
+        wb_name = dir_path + "/"+ wb_name+ "-報告.xlsx"
         wb.save(wb_name)
         messagebox.showinfo("已完成處理", f"檔案名稱: {wb_name}")
 
